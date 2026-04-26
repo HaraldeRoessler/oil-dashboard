@@ -6,6 +6,8 @@
 <title>Oil Market Dashboard — DSNCON</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
 <style>
   :root {
     --bg: #0f1923;
@@ -23,29 +25,29 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
     background: var(--bg);
     color: var(--text);
-    padding: 20px;
+    padding: 16px;
     min-height: 100vh;
   }
   .header {
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
   }
   .header-left h1 {
-    font-size: 28px; font-weight: 700; color: #fff;
+    font-size: 24px; font-weight: 700; color: #fff;
     letter-spacing: -0.5px;
   }
-  .header-left p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .header-left p { color: var(--muted); font-size: 13px; margin-top: 3px; }
   .header-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .badge {
-    display: inline-block; padding: 4px 10px; border-radius: 6px;
-    font-size: 12px; font-weight: 600;
+    display: inline-block; padding: 3px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 600;
   }
   .badge-red { background: rgba(230,57,70,0.2); color: var(--accent); }
   .badge-live { background: rgba(42,157,143,0.2); color: var(--accent3); }
   .btn {
-    padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
     background: var(--card); color: var(--text); cursor: pointer;
-    font-size: 13px; transition: all 0.2s;
+    font-size: 12px; transition: all 0.2s;
   }
   .btn:hover { background: #2a3d4f; }
   .btn-primary {
@@ -54,74 +56,72 @@
   .btn-primary:hover { background: #c12e3e; }
 
   .stats-row {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px; margin-bottom: 20px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px; margin-bottom: 16px;
   }
   .stat-card {
-    background: var(--card); border-radius: 12px; padding: 16px;
+    background: var(--card); border-radius: 10px; padding: 14px;
     border: 1px solid var(--border);
   }
-  .stat-card .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .stat-card .value { font-size: 24px; font-weight: 700; margin-top: 4px; }
-  .stat-card .change { font-size: 13px; margin-top: 2px; }
+  .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: 22px; font-weight: 700; margin-top: 3px; }
+  .stat-card .change { font-size: 12px; margin-top: 2px; }
   .up { color: var(--accent); }
   .down { color: var(--accent3); }
   .neutral { color: var(--warn); }
 
   .chart-grid {
-    display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px;
+    display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px;
   }
   .chart-card {
-    background: var(--card); border-radius: 12px; padding: 20px;
+    background: var(--card); border-radius: 10px; padding: 16px;
     border: 1px solid var(--border);
   }
   .chart-card h3 {
-    font-size: 16px; font-weight: 600; margin-bottom: 12px;
-    display: flex; justify-content: space-between; align-items: center;
+    font-size: 15px; font-weight: 600; margin-bottom: 10px;
   }
-  .chart-container { position: relative; width: 100%; height: 350px; }
-  .chart-container-tall { height: 300px; }
+  .chart-container { position: relative; width: 100%; height: 320px; }
 
   .controls-row {
-    display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
-    margin-bottom: 16px; padding: 12px 16px;
-    background: var(--card); border-radius: 12px; border: 1px solid var(--border);
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 14px; padding: 10px 14px;
+    background: var(--card); border-radius: 10px; border: 1px solid var(--border);
   }
-  .controls-row label { font-size: 13px; color: var(--muted); }
-  .controls-row select, .controls-row input[type="range"] {
+  .controls-row label { font-size: 12px; color: var(--muted); }
+  .controls-row select {
     background: var(--bg); color: var(--text); border: 1px solid var(--border);
-    border-radius: 6px; padding: 4px 8px; font-size: 13px;
+    border-radius: 5px; padding: 4px 8px; font-size: 12px;
   }
   .event-timeline {
-    background: var(--card); border-radius: 12px; padding: 20px;
+    background: var(--card); border-radius: 10px; padding: 16px;
     border: 1px solid var(--border);
   }
-  .event-timeline h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  .event-timeline h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
   .event-item {
-    display: flex; gap: 12px; padding: 8px 0;
+    display: flex; gap: 10px; padding: 6px 0;
     border-bottom: 1px solid var(--border);
   }
   .event-item:last-child { border-bottom: none; }
-  .event-date { color: var(--warn); font-weight: 600; font-size: 13px; min-width: 100px; }
-  .event-desc { font-size: 14px; }
+  .event-date { color: var(--warn); font-weight: 600; font-size: 12px; min-width: 90px; }
+  .event-desc { font-size: 13px; }
   .event-tag {
-    display: inline-block; padding: 2px 6px; border-radius: 4px;
-    font-size: 11px; font-weight: 600; margin-left: 8px;
+    display: inline-block; padding: 1px 5px; border-radius: 3px;
+    font-size: 10px; font-weight: 600; margin-left: 6px;
   }
   .tag-conflict { background: rgba(230,57,70,0.2); color: var(--accent); }
   .tag-market { background: rgba(42,157,143,0.2); color: var(--accent3); }
   .tag-policy { background: rgba(69,123,157,0.2); color: var(--accent2); }
 
   .footer {
-    text-align: center; color: var(--muted); font-size: 12px;
-    margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);
+    text-align: center; color: var(--muted); font-size: 11px;
+    margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border);
   }
   .footer a { color: var(--accent2); text-decoration: none; }
 
   @media (max-width: 600px) {
     .header { flex-direction: column; align-items: flex-start; }
-    .header-left h1 { font-size: 22px; }
-    .chart-container { height: 280px; }
+    .header-left h1 { font-size: 20px; }
+    .chart-container { height: 250px; }
     .stats-row { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
@@ -131,12 +131,12 @@
 <div class="header">
   <div class="header-left">
     <h1>🛢️ Oil Market Dashboard</h1>
-    <p>Live market monitor · Data from FRED &amp; EIA · <span id="updateTime">Loading...</span></p>
+    <p>Live market monitor · <span id="updateTime">Loading...</span></p>
   </div>
   <div class="header-right">
-    <span class="badge badge-red">⚠️ Crisis Alert: Hormuz</span>
+    <span class="badge badge-red">⚠️ Hormuz Crisis</span>
     <span class="badge badge-live" id="liveBadge">● Live</span>
-    <button class="btn btn-primary" onclick="refreshAll()">⟳ Refresh Data</button>
+    <button class="btn btn-primary" onclick="refreshAll()">⟳ Refresh</button>
     <button class="btn" onclick="toggleTheme()">🌓</button>
   </div>
 </div>
@@ -164,7 +164,7 @@
     <div class="change" id="sprChange">--</div>
   </div>
   <div class="stat-card">
-    <div class="label">Recession Prob (Hamilton)</div>
+    <div class="label">Recession Prob</div>
     <div class="value" id="recProb">--</div>
     <div class="change" id="recRisk">--</div>
   </div>
@@ -172,21 +172,21 @@
 
 <!-- Controls -->
 <div class="controls-row">
-  <label for="timeRange">Time Range:</label>
+  <label for="timeRange">Range:</label>
   <select id="timeRange" onchange="updateCharts()">
     <option value="3m">3 Months</option>
     <option value="6m">6 Months</option>
     <option value="1y">1 Year</option>
     <option value="2y" selected>2 Years</option>
-    <option value="all">All Data</option>
+    <option value="all">All</option>
   </select>
-  <label for="chartType">Chart Style:</label>
+  <label for="chartType">Style:</label>
   <select id="chartType" onchange="updateCharts()">
     <option value="line">Line</option>
     <option value="area">Area</option>
   </select>
-  <label><input type="checkbox" id="showEvents" checked onchange="updateCharts()"> Show Events</label>
-  <label><input type="checkbox" id="showSPR" checked onchange="updateCharts()"> SPR Overlay</label>
+  <label><input type="checkbox" id="showEvents" checked onchange="updateCharts()"> Events</label>
+  <label><input type="checkbox" id="showSPR" checked onchange="updateCharts()"> SPR</label>
 </div>
 
 <!-- Chart Grid -->
@@ -200,7 +200,7 @@
     <div class="chart-container"><canvas id="spreadChart"></canvas></div>
   </div>
   <div class="chart-card">
-    <h3>🏛️ Strategic Petroleum Reserve</h3>
+    <h3>🏛️ Strategic Petroleum Reserve vs Brent</h3>
     <div class="chart-container"><canvas id="sprChart"></canvas></div>
   </div>
   <div class="chart-card">
@@ -216,37 +216,43 @@
 </div>
 
 <div class="footer">
-  <p>Data sourced from <a href="https://fred.stlouisfed.org/" target="_blank">FRED</a> and <a href="https://www.eia.gov/" target="_blank">EIA</a> · Dashboard built for DSNCON GmbH · <a href="#" onclick="showConfig()">Configure API Keys</a></p>
+  <p>Data sourced from FRED and EIA · Dashboard built for DSNCON GmbH</p>
 </div>
 
 <script>
 // ============================================================
-// DATA GENERATOR — realistic oil market scenario
+// Register Chart.js plugins
+// ============================================================
+Chart.register(ChartAnnotation);
+// The luxon adapter auto-registers when loaded
+
+// ============================================================
+// DATA GENERATOR — realistic oil market scenario data
 // ============================================================
 const EVENTS = [
-  { date: '2024-10-01', label: 'Iran-Israel proxy escalation', tag: 'conflict', type: 'conflict' },
-  { date: '2025-02-15', label: 'US sanctions tighten on Iranian oil', tag: 'policy', type: 'policy' },
-  { date: '2025-06-01', label: 'OPEC+ extends production cuts', tag: 'market', type: 'market' },
-  { date: '2025-10-01', label: 'Iran nuclear talks collapse', tag: 'conflict', type: 'conflict' },
-  { date: '2025-12-15', label: 'Oil breaches $90 on supply fears', tag: 'market', type: 'market' },
-  { date: '2026-02-28', label: 'US & Israel launch strikes on Iran', tag: 'conflict', type: 'conflict' },
-  { date: '2026-03-20', label: 'Iran seizes ships in Strait of Hormuz', tag: 'conflict', type: 'conflict' },
-  { date: '2026-04-13', label: 'US naval blockade of Iranian ports', tag: 'policy', type: 'policy' },
+  { date: '2024-10-01', label: 'Iran-Israel proxy escalation', type: 'conflict' },
+  { date: '2025-02-15', label: 'US sanctions tighten on Iranian oil', type: 'policy' },
+  { date: '2025-06-01', label: 'OPEC+ extends production cuts', type: 'market' },
+  { date: '2025-10-01', label: 'Iran nuclear talks collapse', type: 'conflict' },
+  { date: '2025-12-15', label: 'Oil breaches $90 on supply fears', type: 'market' },
+  { date: '2026-02-28', label: 'US & Israel launch strikes on Iran', type: 'conflict' },
+  { date: '2026-03-20', label: 'Iran seizes ships in Strait of Hormuz', type: 'conflict' },
+  { date: '2026-04-13', label: 'US naval blockade of Iranian ports', type: 'policy' },
 ];
 
 function generateData() {
   const now = new Date();
-  const start = new Date('2024-01-01');
   const data = [];
   let brent = 78, wti = 75.5;
 
-  for (let d = new Date(start); d <= now; d.setDate(d.getDate() + 7)) {
-    const t = (d - start) / (now - start); // 0..1
+  for (let d = new Date('2024-01-01'); d <= now; d.setDate(d.getDate() + 7)) {
     const dt = new Date(d);
+    const start = new Date('2024-01-01');
+    const t = (dt - start) / (now - start);
 
     // Base trends
     const trend1 = Math.sin(t * Math.PI * 0.6) * 6;
-    const trend2 = t * 18; // gradual upward drift
+    const trend2 = t * 18;
 
     // Iran proxy escalation (Oct 2024)
     const oct24 = Math.max(0, (dt - new Date('2024-10-01')) / (7*86400000));
@@ -260,12 +266,11 @@ function generateData() {
     const hormuz = Math.max(0, (dt - new Date('2026-03-20')) / (7*86400000));
     const spike3 = Math.min(hormuz * 2.5, 15);
 
-    // Noise
     const noise = (Math.random() - 0.5) * 2.5;
 
     brent = 78 + trend1 + trend2 + spike1 + spike2 + spike3 + noise;
 
-    // WTI — normal spread ~$3, widens to ~$11 during crisis
+    // WTI — spread widens during crisis
     const crisisStart = Math.max(0, (dt - new Date('2026-03-20')) / (7*86400000));
     const spreadWiden = Math.min(crisisStart * 0.6, 8);
     const wtiSpread = 2.5 + Math.random() * 0.8 + spreadWiden;
@@ -279,7 +284,6 @@ function generateData() {
   return data;
 }
 
-// SPR data (monthly)
 function generateSPR(data) {
   const monthly = {};
   data.forEach(d => {
@@ -298,11 +302,9 @@ function generateSPR(data) {
   return spr;
 }
 
-// Recession probability (Hamilton Rule approximation)
 function generateRecessionProb(data) {
   return data.map(d => {
     const brent = d.brent;
-    // Simplified Hamilton Rule: prob increases as oil rises above baseline
     const baseProb = 0.03;
     const oilShock = Math.max(0, (brent - 80) * 0.006);
     const hormuzFactor = d.date >= new Date('2026-03-20') ? 0.08 : 0;
@@ -312,13 +314,11 @@ function generateRecessionProb(data) {
 }
 
 // ============================================================
-// CHART SETUP
+// Generate data once
 // ============================================================
-Chart.register(ChartAnnotation);
-
-const rawData = generateData();
-const sprData = generateSPR(rawData);
-const recData = generateRecessionProb(rawData);
+let rawData = generateData();
+let sprData = generateSPR(rawData);
+let recData = generateRecessionProb(rawData);
 
 let priceChart, spreadChart, sprChart, recChart;
 let lightMode = false;
@@ -350,8 +350,8 @@ function filterData(range) {
   };
 }
 
-function createAnnotationEvents(data) {
-  if (!document.getElementById('showEvents').checked) return [];
+function getEventAnnotations(data) {
+  if (!document.getElementById('showEvents').checked) return {};
   const annotations = {};
   EVENTS.forEach(ev => {
     const d = new Date(ev.date);
@@ -377,42 +377,46 @@ function createAnnotationEvents(data) {
   return annotations;
 }
 
+// ============================================================
+// BUILD CHARTS
+// ============================================================
+
 function buildPriceChart() {
   const range = document.getElementById('timeRange').value;
   const chartType = document.getElementById('chartType').value;
   const { filtered } = filterData(range);
   const colors = getColors();
-  const annotations = createAnnotationEvents(filtered);
+  const annotations = getEventAnnotations(filtered);
 
   if (priceChart) priceChart.destroy();
 
   const ctx = document.getElementById('priceChart').getContext('2d');
-  const datasets = [
-    {
-      label: 'Brent Crude',
-      data: filtered.map(d => ({ x: d.date, y: d.brent })),
-      borderColor: '#E63946',
-      backgroundColor: chartType === 'area' ? 'rgba(230,57,70,0.15)' : 'transparent',
-      fill: chartType === 'area',
-      borderWidth: 2.5,
-      pointRadius: 0,
-      tension: 0.2,
-    },
-    {
-      label: 'WTI Crude',
-      data: filtered.map(d => ({ x: d.date, y: d.wti })),
-      borderColor: '#457B9D',
-      backgroundColor: chartType === 'area' ? 'rgba(69,123,157,0.15)' : 'transparent',
-      fill: chartType === 'area',
-      borderWidth: 2.5,
-      pointRadius: 0,
-      tension: 0.2,
-    },
-  ];
-
   priceChart = new Chart(ctx, {
     type: 'line',
-    data: { datasets },
+    data: {
+      datasets: [
+        {
+          label: 'Brent Crude',
+          data: filtered.map(d => ({ x: d.date, y: d.brent })),
+          borderColor: '#E63946',
+          backgroundColor: 'rgba(230,57,70,0.15)',
+          fill: chartType === 'area',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0.2,
+        },
+        {
+          label: 'WTI Crude',
+          data: filtered.map(d => ({ x: d.date, y: d.wti })),
+          borderColor: '#457B9D',
+          backgroundColor: 'rgba(69,123,157,0.15)',
+          fill: chartType === 'area',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0.2,
+        },
+      ]
+    },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
@@ -421,18 +425,21 @@ function buildPriceChart() {
         annotation: { annotations },
         tooltip: {
           callbacks: {
-            label: ctx => ctx.dataset.label + ': $' + ctx.parsed.y.toFixed(2),
+            label: function(ctx) {
+              return ctx.dataset.label + ': $' + ctx.parsed.y.toFixed(2);
+            },
           }
-        }
+        },
       },
       scales: {
         x: {
-          type: 'time', time: { tooltipFormat: 'MMM d, yyyy' },
+          type: 'time',
+          time: { tooltipFormat: 'MMM d, yyyy', displayFormats: { month: 'MMM yyyy', quarter: 'MMM yyyy' } },
           ticks: { color: colors.muted, maxTicksLimit: 10 },
           grid: { color: colors.grid },
         },
         y: {
-          ticks: { color: colors.muted, callback: v => '$' + v },
+          ticks: { color: colors.muted, callback: function(v) { return '$' + v; } },
           grid: { color: colors.grid },
         },
       },
@@ -444,11 +451,10 @@ function buildSpreadChart() {
   const range = document.getElementById('timeRange').value;
   const { filtered } = filterData(range);
   const colors = getColors();
-  const annotations = createAnnotationEvents(filtered);
+  const annotations = getEventAnnotations(filtered);
 
   if (spreadChart) spreadChart.destroy();
 
-  // Color bars by spread level
   const barColors = filtered.map(d =>
     d.spread > 8 ? '#E63946' : d.spread > 5 ? '#F4A261' : '#2A9D8F'
   );
@@ -462,7 +468,7 @@ function buildSpreadChart() {
         label: 'Brent-WTI Spread',
         data: filtered.map(d => d.spread),
         backgroundColor: barColors,
-        borderColor: barColors.map(c => c),
+        borderColor: barColors.map(function(c) { return c; }),
         borderWidth: 1,
         borderRadius: 2,
       }]
@@ -472,7 +478,7 @@ function buildSpreadChart() {
       plugins: {
         legend: { display: false },
         annotation: {
-          annotations: {
+          annotations: Object.assign({
             normalLine: {
               type: 'line', yMin: 5, yMax: 5,
               borderColor: '#2A9D8F', borderWidth: 1.5, borderDash: [5, 3],
@@ -483,23 +489,23 @@ function buildSpreadChart() {
               borderColor: '#E63946', borderWidth: 1.5, borderDash: [5, 3],
               label: { display: true, content: 'Crisis ($8)', position: 'end', color: '#E63946' }
             },
-            ...annotations,
-          }
+          }, annotations),
         },
         tooltip: {
           callbacks: {
-            label: ctx => 'Spread: $' + ctx.parsed.y.toFixed(2),
+            label: function(ctx) { return 'Spread: $' + ctx.parsed.y.toFixed(2); },
           }
         },
       },
       scales: {
         x: {
-          type: 'time', time: { tooltipFormat: 'MMM d, yyyy' },
+          type: 'time',
+          time: { tooltipFormat: 'MMM d, yyyy', displayFormats: { month: 'MMM yyyy', quarter: 'MMM yyyy' } },
           ticks: { color: colors.muted, maxTicksLimit: 8 },
           grid: { display: false },
         },
         y: {
-          ticks: { color: colors.muted, callback: v => '$' + v },
+          ticks: { color: colors.muted, callback: function(v) { return '$' + v; } },
           grid: { color: colors.grid },
         },
       },
@@ -511,9 +517,8 @@ function buildSPRChart() {
   const range = document.getElementById('timeRange').value;
   const { sprFiltered, filtered } = filterData(range);
   const colors = getColors();
-
-  // Show SPR only if checkbox is checked, and also show Brent overlay
   const showSPR = document.getElementById('showSPR').checked;
+
   if (sprChart) sprChart.destroy();
 
   const datasets = [];
@@ -521,7 +526,7 @@ function buildSPRChart() {
   if (showSPR) {
     datasets.push({
       label: 'SPR (million bbl)',
-      data: sprFiltered.map(d => ({ x: d.date, y: d.value })),
+      data: sprFiltered.map(function(d) { return { x: d.date, y: d.value }; }),
       borderColor: '#1D3557',
       backgroundColor: 'rgba(29,53,87,0.2)',
       fill: true,
@@ -533,10 +538,9 @@ function buildSPRChart() {
     });
   }
 
-  // Brent overlay
   datasets.push({
     label: 'Brent Crude ($/bbl)',
-    data: filtered.map(d => ({ x: d.date, y: d.brent })),
+    data: filtered.map(function(d) { return { x: d.date, y: d.brent }; }),
     borderColor: '#E63946',
     backgroundColor: 'rgba(230,57,70,0.08)',
     fill: true,
@@ -549,7 +553,7 @@ function buildSPRChart() {
   const ctx = document.getElementById('sprChart').getContext('2d');
   sprChart = new Chart(ctx, {
     type: 'line',
-    data: { datasets },
+    data: { datasets: datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
@@ -560,21 +564,21 @@ function buildSPRChart() {
             line90: {
               type: 'line', yMin: 365, yMax: 365,
               borderColor: '#F4A261', borderWidth: 1.5, borderDash: [5, 3],
-              label: { display: true, content: '90-day import cover (365)', position: 'end', color: '#F4A261' },
+              label: { display: true, content: '90-day import (365M)', position: 'end', color: '#F4A261' },
               yScaleID: 'y1',
             },
             lineMin: {
               type: 'line', yMin: 350, yMax: 350,
               borderColor: '#E63946', borderWidth: 1.5, borderDash: [5, 3],
-              label: { display: true, content: 'Min operating (350)', position: 'end', color: '#E63946' },
+              label: { display: true, content: 'Min operating (350M)', position: 'end', color: '#E63946' },
               yScaleID: 'y1',
             },
           }
         },
         tooltip: {
           callbacks: {
-            label: ctx => {
-              if (ctx.dataset.label.includes('SPR')) return 'SPR: ' + ctx.parsed.y + 'M bbl';
+            label: function(ctx) {
+              if (ctx.dataset.label.indexOf('SPR') >= 0) return 'SPR: ' + ctx.parsed.y + 'M bbl';
               return 'Brent: $' + ctx.parsed.y.toFixed(2);
             },
           }
@@ -582,13 +586,14 @@ function buildSPRChart() {
       },
       scales: {
         x: {
-          type: 'time', time: { tooltipFormat: 'MMM d, yyyy' },
+          type: 'time',
+          time: { tooltipFormat: 'MMM d, yyyy', displayFormats: { month: 'MMM yyyy', quarter: 'MMM yyyy' } },
           ticks: { color: colors.muted, maxTicksLimit: 8 },
           grid: { color: colors.grid },
         },
         y: {
           position: 'left',
-          ticks: { color: '#E63946', callback: v => '$' + v },
+          ticks: { color: '#E63946', callback: function(v) { return '$' + v; } },
           grid: { color: colors.grid },
           title: { display: true, text: 'Price ($/bbl)', color: '#E63946' },
         },
@@ -615,8 +620,8 @@ function buildRecessionChart() {
     type: 'line',
     data: {
       datasets: [{
-        label: 'Recession Probability',
-        data: recFiltered.map(d => ({ x: d.date, y: d.value })),
+        label: 'Recession Probability (%)',
+        data: recFiltered.map(function(d) { return { x: d.date, y: d.value }; }),
         borderColor: '#1D3557',
         backgroundColor: 'rgba(230,57,70,0.3)',
         fill: true,
@@ -646,25 +651,30 @@ function buildRecessionChart() {
         },
         tooltip: {
           callbacks: {
-            label: ctx => 'Recession Prob: ' + ctx.parsed.y.toFixed(1) + '%',
+            label: function(ctx) { return 'Recession Prob: ' + ctx.parsed.y.toFixed(1) + '%'; },
           }
         },
       },
       scales: {
         x: {
-          type: 'time', time: { tooltipFormat: 'MMM d, yyyy' },
+          type: 'time',
+          time: { tooltipFormat: 'MMM d, yyyy', displayFormats: { month: 'MMM yyyy', quarter: 'MMM yyyy' } },
           ticks: { color: colors.muted, maxTicksLimit: 8 },
           grid: { color: colors.grid },
         },
         y: {
           min: 0, max: 70,
-          ticks: { color: colors.muted, callback: v => v + '%' },
+          ticks: { color: colors.muted, callback: function(v) { return v + '%'; } },
           grid: { color: colors.grid },
         },
       },
     },
   });
 }
+
+// ============================================================
+// STATS & UI UPDATES
+// ============================================================
 
 function updateStats() {
   const last = rawData[rawData.length - 1];
@@ -685,12 +695,12 @@ function updateStats() {
 
   const spread = last.brent - last.wti;
   document.getElementById('spreadValue').textContent = '$' + spread.toFixed(2);
-  const spreadStatus = spread > 8 ? '🔴 Crisis-level widening' : spread > 5 ? '🟡 Elevated' : '🟢 Normal';
+  const spreadStatus = spread > 8 ? '🔴 Crisis widening' : spread > 5 ? '🟡 Elevated' : '🟢 Normal';
   document.getElementById('spreadStatus').textContent = spreadStatus;
 
   document.getElementById('sprValue').textContent = sprLast.value + 'M';
   const sprChg = sprLast.value - sprPrev.value;
-  document.getElementById('sprChange').innerHTML = (sprChg >= 0 ? '▲' : '▼') + ' ' + Math.abs(sprChg).toFixed(1) + 'M bbl';
+  document.getElementById('sprChange').innerHTML = (sprChg >= 0 ? '▲' : '▼') + ' ' + Math.abs(sprChg).toFixed(1) + 'M';
   document.getElementById('sprChange').className = 'change down';
 
   document.getElementById('recProb').textContent = recLast.value + '%';
@@ -702,12 +712,12 @@ function updateStats() {
 
 function buildEventTimeline() {
   const el = document.getElementById('eventList');
-  el.innerHTML = EVENTS.sort((a,b) => new Date(b.date) - new Date(a.date)).map(ev => {
-    const tagClass = ev.type === 'conflict' ? 'tag-conflict' : ev.type === 'policy' ? 'tag-policy' : 'tag-market';
-    return `<div class="event-item">
-      <div class="event-date">${ev.date}</div>
-      <div class="event-desc">${ev.label} <span class="event-tag ${tagClass}">${ev.type}</span></div>
-    </div>`;
+  el.innerHTML = EVENTS.sort(function(a,b) { return new Date(b.date) - new Date(a.date); }).map(function(ev) {
+    var tagClass = ev.type === 'conflict' ? 'tag-conflict' : ev.type === 'policy' ? 'tag-policy' : 'tag-market';
+    return '<div class="event-item">' +
+      '<div class="event-date">' + ev.date + '</div>' +
+      '<div class="event-desc">' + ev.label + ' <span class="event-tag ' + tagClass + '">' + ev.type + '</span></div>' +
+    '</div>';
   }).join('');
 }
 
@@ -719,28 +729,17 @@ function updateCharts() {
 }
 
 function refreshAll() {
-  // Regenerate data with slight random variation
-  const newData = generateData();
-  rawData.length = 0;
-  rawData.push(...newData);
-
-  const newSpr = generateSPR(rawData);
-  sprData.length = 0;
-  sprData.push(...newSpr);
-
-  const newRec = generateRecessionProb(rawData);
-  recData.length = 0;
-  recData.push(...newRec);
-
+  rawData = generateData();
+  sprData = generateSPR(rawData);
+  recData = generateRecessionProb(rawData);
   updateStats();
   updateCharts();
-  document.getElementById('liveBadge').textContent = '● Updated ' + new Date().toLocaleTimeString();
-  document.getElementById('liveBadge').className = 'badge badge-live';
+  document.getElementById('liveBadge').textContent = '● ' + new Date().toLocaleTimeString();
 }
 
 function toggleTheme() {
   lightMode = !lightMode;
-  const root = document.documentElement;
+  var root = document.documentElement;
   if (lightMode) {
     root.style.setProperty('--bg', '#f0f4f8');
     root.style.setProperty('--card', '#ffffff');
@@ -755,10 +754,6 @@ function toggleTheme() {
     root.style.setProperty('--border', '#2a3d4f');
   }
   updateCharts();
-}
-
-function showConfig() {
-  alert('To connect live data:\n\n1. Get a free FRED API key: https://fred.stlouisfed.org/docs/api/api_key.html\n2. Get a free EIA API key: https://www.eia.gov/opendata/\n3. Open browser console and set:\n   localStorage.setItem("fred_key", "YOUR_KEY")\n   localStorage.setItem("eia_key", "YOUR_KEY")\n4. Click "Refresh Data"');
 }
 
 // ============================================================
