@@ -250,11 +250,13 @@ function filter(range) {
 }
 
 function fmtDate(d) {
+  if (typeof d === 'string') d = new Date(d);
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
 }
 
 function fmtShort(d) {
+  if (typeof d === 'string') d = new Date(d);
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return months[d.getMonth()] + " '" + String(d.getFullYear()).slice(2);
 }
@@ -320,14 +322,14 @@ function drawPrice(data, style) {
         legend: { labels: { color: '#e0e6ed', usePointStyle: true, boxWidth: 8 } },
         tooltip: {
           callbacks: {
-            title: function(items) { return fmtDate(new Date(items[0].label)); },
+            title: function(items) { return fmtDate(labels[items[0].dataIndex]); },
             label: function(ctx) { return ctx.dataset.label + ': $' + ctx.parsed.y.toFixed(2); },
           }
         },
       },
       scales: {
         x: {
-          ticks: { color: '#8899aa', maxTicksLimit: 8, callback: function(v) { return fmtShort(new Date(v)); } },
+          ticks: { color: '#8899aa', maxTicksLimit: 8, callback: function(v, i) { return fmtShort(labels[i]); } },
           grid: { color: '#1a2d3d' },
         },
         y: {
@@ -365,14 +367,14 @@ function drawSpread(data, style, showEv) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            title: function(items) { return fmtDate(new Date(items[0].label)); },
+            title: function(items) { return fmtDate(labels[items[0].dataIndex]); },
             label: function(ctx) { return 'Spread: $' + ctx.parsed.y.toFixed(2); },
           }
         },
       },
       scales: {
         x: {
-          ticks: { color: '#8899aa', maxTicksLimit: 8, callback: function(v) { return fmtShort(new Date(v)); } },
+          ticks: { color: '#8899aa', maxTicksLimit: 8, callback: function(v, i) { return fmtShort(labels[i]); } },
           grid: { display: false },
         },
         y: {
@@ -433,7 +435,7 @@ function drawSpr(priceData, sprData, showEv) {
         legend: { labels: { color: '#e0e6ed', usePointStyle: true, boxWidth: 8 } },
         tooltip: {
           callbacks: {
-            title: function(items) { return fmtDate(new Date(items[0].label)); },
+            title: function(items) { return fmtDate(labels[items[0].dataIndex]); },
             label: function(ctx) {
               if (ctx.dataset.label.indexOf('SPR') >= 0) return 'SPR: ' + ctx.parsed.y + 'M bbl';
               return 'Brent: $' + (ctx.parsed.y ? ctx.parsed.y.toFixed(2) : 'N/A');
@@ -443,7 +445,7 @@ function drawSpr(priceData, sprData, showEv) {
       },
       scales: {
         x: {
-          ticks: { color: '#8899aa', maxTicksLimit: 8, callback: function(v) { return fmtShort(new Date(v)); } },
+          ticks: { color: '#8899aa', maxTicksLimit: 8, callback: function(v, i) { return fmtShort(labels[i]); } },
           grid: { color: '#1a2d3d' },
         },
         y: {
@@ -490,14 +492,14 @@ function drawRec(data) {
         legend: { labels: { color: '#e0e6ed' } },
         tooltip: {
           callbacks: {
-            title: function(items) { return fmtDate(new Date(items[0].label)); },
+            title: function(items) { return fmtDate(labels[items[0].dataIndex]); },
             label: function(ctx) { return 'Recession Prob: ' + ctx.parsed.y.toFixed(1) + '%'; },
           }
         },
       },
       scales: {
         x: {
-          ticks: { color: '#8899aa', maxTicksLimit: 8, callback: function(v) { return fmtShort(new Date(v)); } },
+          ticks: { color: '#8899aa', maxTicksLimit: 8, callback: function(v, i) { return fmtShort(labels[i]); } },
           grid: { color: '#1a2d3d' },
         },
         y: {
