@@ -85,6 +85,7 @@
   </div>
   <div>
     <span class="badge badge-red">⚠️ Hormuz Crisis</span>
+    <span class="badge badge-live" id="dataSource">Loading…</span>
     <span class="badge badge-live" id="liveBadge">● Live</span>
     <button class="btn" onclick="refreshAll()">⟳ Refresh</button>
   </div>
@@ -138,7 +139,8 @@
 </div>
 
 <div class="footer">
-  <p>DSNCON GmbH · Data from FRED & EIA · Updated <span id="updateTs">--</span></p>
+  <p id="attribution">Loading source…</p>
+  <p>DSNCON GmbH · Updated <span id="updateTs">--</span></p>
 </div>
 
 <script>
@@ -159,7 +161,48 @@ var EVENTS = [
 ];
 
 // ============================================================
-// GENERATE DATA
+// LIVE vs SYNTHETIC SWITCH
+// ============================================================
+var useLiveData = false;
+var dataSourceLabel = 'Simulated';
+var dataMeta = null;
+
+function fmtDate(d) {
+  if (typeof d === 'string') d = new Date(d);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+}
+
+function fmtShort(d) {
+  if (typeof d === 'string') d = new Date(d);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getMonth()] + " '" + String(d.getFullYear()).slice(2);
+}
+
+// ============================================================
+// FETCH LIVE DATA
+// ============================================================
+function loadLiveData(callback, errorCallback) {
+  fetch('data/prices.json')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      dataMeta = data.meta;
+      var rows = data.prices.map(function(p) {
+        var dt = new Date(p.date + 'T00:00:00');
+        return { date: dt, brent: p.brent, wti: p.wti, spread: p.spread };
+      });
+      useLiveData = true;
+      dataSourceLabel = 'Yahoo Finance';
+      callback(rows);
+    })
+    .catch(function(e) {
+      console.warn('Live data load failed:', e);
+      callback(null);
+    });
+}
+
+// ============================================================
+// FALLBACK SYNTHETIC DATA
 // ============================================================
 function genData() {
   var now = new Date();
@@ -194,6 +237,20 @@ function genData() {
     out.push({ date: dt, brent: parseFloat(brent.toFixed(2)), wti: parseFloat(wti.toFixed(2)), spread: parseFloat((brent - wti).toFixed(2)) });
   }
   return out;
+}
+
+function onDataLoaded(liveRows) {
+  if (liveRows && liveRows.length > 10) {
+    rawData = liveRows;
+    sprData = genSpr(rawData);
+    recData = genRec(rawData);
+  } else {
+    rawData = genData();
+    sprData = genSpr(rawData);
+    recData = genRec(rawData);
+    dataSourceLabel = 'Simulated';
+  }
+  drawAll();
 }
 
 function genSpr(data) {
@@ -543,6 +600,27 @@ function updateStats() {
 
   document.getElementById('sRec').textContent = recLast.value + '%';
   document.getElementById('sRecSt').textContent = recLast.value > 45 ? '🔴 High Risk' : recLast.value > 25 ? '🟡 Elevated' : '🟢 Low';
+
+  // Update source badge
+  var sourceEl = document.getElementById('dataSource');
+  if (sourceEl) {
+    if (useLiveData && dataMeta) {
+      sourceEl.innerHTML = '📊 ' + dataSourceLabel + ' (BZ=F Brent · CL=F WTI)';
+      sourceEl.className = 'badge badge-live';
+    } else {
+      sourceEl.innerHTML = '🔶 Simulated (Synthetic Data)';
+      sourceEl.className = 'badge badge-red';
+    }
+  }
+
+  var attributionEl = document.getElementById('attribution');
+  if (attributionEl) {
+    if (useLiveData && dataMeta) {
+      attributionEl.innerHTML = 'Data source: Yahoo Finance · BZ=F (ICE Brent futures) · CL=F (NYMEX WTI futures) · Last updated: ' + (dataMeta.lastUpdated || '–');
+    } else {
+      attributionEl.innerHTML = 'Data source: Simulated/Synthetic – for illustration only';
+    }
+  }
 }
 
 // ============================================================
@@ -560,13 +638,18 @@ function buildEvents() {
 // ============================================================
 // REFRESH
 // ============================================================
+// ============================================================
+// REFRESH
+// ============================================================
 function refreshAll() {
-  rawData = genData();
-  sprData = genSpr(rawData);
-  recData = genRec(rawData);
-  Object.keys(charts).forEach(function(k) { if (charts[k]) charts[k].destroy(); });
-  drawAll();
-  document.getElementById('liveBadge').textContent = '● ' + new Date().toLocaleTimeString();
+  var btn = document.querySelector('.header button');
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ Fetching...'; }
+  
+  loadLiveData(function(rows) {
+    onDataLoaded(rows);
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Refresh'; }
+    document.getElementById('liveBadge').textContent = '● ' + new Date().toLocaleTimeString();
+  });
 }
 
 function redraw() {
@@ -578,8 +661,10 @@ function redraw() {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('status').textContent = 'Rendering charts...';
-  drawAll();
+  document.getElementById('status').textContent = 'Loading data...';
+  loadLiveData(function(rows) {
+    onDataLoaded(rows);
+  });
 });
 </script>
 </body>
