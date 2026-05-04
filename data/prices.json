@@ -1,18 +1,12 @@
 {
   "meta": {
     "source": "Yahoo Finance (BZ=F = ICE Brent Futures, CL=F = NYMEX WTI Futures)",
-    "lastUpdated": "2026-05-03 08:03 UTC",
-    "latestDate": "2026-05-01",
-    "liveBrent": 108.17,
-    "liveWti": 101.94
+    "lastUpdated": "2026-05-04 08:32 UTC",
+    "latestDate": "2026-05-04",
+    "liveBrent": 110.46,
+    "liveWti": 104.1
   },
   "prices": [
-    {
-      "date": "2024-05-03",
-      "brent": 82.96,
-      "wti": 78.11,
-      "spread": 4.85
-    },
     {
       "date": "2024-05-06",
       "brent": 83.33,
@@ -3018,6 +3012,12 @@
       "brent": 108.17,
       "wti": 101.94,
       "spread": 6.23
+    },
+    {
+      "date": "2026-05-04",
+      "brent": 110.46,
+      "wti": 104.09,
+      "spread": 6.37
     }
   ]
 }
